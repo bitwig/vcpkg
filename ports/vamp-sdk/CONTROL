@@ -1,0 +1,6 @@
+Source: vamp-sdk
+Version: 2.9
+Port-Version: 1
+Homepage: https://www.vamp-plugins.org/develop.html
+Description: Library for VAMP plugins
+Build-Depends: libsndfile
