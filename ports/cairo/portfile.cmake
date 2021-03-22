@@ -18,7 +18,9 @@ file(COPY ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt DESTINATION ${SOURCE_PATH}/sr
 
 if("freetype" IN_LIST FEATURES)
     set(CAIRO_HAS_FT_FONT TRUE)
-    set(CAIRO_HAS_FC_FONT TRUE)
+    if ("x11" IN_LIST FEATURES)
+        set(CAIRO_HAS_FC_FONT TRUE)
+    endif()
 endif()
 configure_file("${CMAKE_CURRENT_LIST_DIR}/cairo-features.h.in" "${SOURCE_PATH}/src/cairo-features.h")
 
