@@ -20,7 +20,7 @@
         {
     	"name": "fontconfig",
     	"platform": "linux"
-  	},
+  	}
       ]
     },
     "gobject": {
