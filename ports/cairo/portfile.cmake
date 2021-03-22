@@ -15,6 +15,7 @@ vcpkg_extract_source_archive_ex(
 )
 
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt DESTINATION ${SOURCE_PATH}/src)
+#file(COPY ${CURRENT_PORT_DIR}/cairo-features.h DESTINATION ${SOURCE_PATH}/src)
 
 if("freetype" IN_LIST FEATURES)
     set(CAIRO_HAS_FT_FONT TRUE)

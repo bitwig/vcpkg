@@ -25,6 +25,11 @@ set(CAIRO_X11_HEADERS
     cairo-xlib.h
 )
 
+set(CAIRO_MACOS_HEADERS
+    cairo-quartz.h
+    cairo-quartz-image.h
+)
+
 file(GLOB SOURCES
 "cairo-analysis-surface.c"
 "cairo-arc.c"
@@ -163,6 +168,16 @@ if(WITH_FREETYPE)
     list(APPEND SOURCES ${_FREETYPE_SOURCES})
 endif()
 
+if(APPLE)
+	# BWS MacOS
+	file(GLOB PLATFORM_SOURCES_APPLE
+	  "cairo-quartz-font.c"
+	  "cairo-quartz-image-surface.c"
+	  "cairo-quartz-surface.c"
+	)
+	list(APPEND SOURCES ${PLATFORM_SOURCES_APPLE})
+endif()
+
 # win32
 file(GLOB PLATFORM_SOURCES_WIN32
 "win32/cairo-win32-debug.c"
@@ -227,6 +242,12 @@ if(WIN32)
     target_link_libraries(cairo PRIVATE gdi32 msimg32 user32)
 endif()
 
+if(APPLE)
+  find_library(CF CoreFoundation)
+  find_library(CG CoreGraphics)
+  target_link_libraries(cairo PRIVATE ${CF} ${CG})
+endif()
+
 # GObject support module
 
 set(CAIRO_GOBJECT_SOURCES
@@ -248,9 +269,9 @@ if(WITH_GOBJECT)
             PROPERTIES COMPILE_DEFINITIONS "cairo_public=__attribute__((visibility(\"default\")))")
         endif()
     endif()
-    
-    find_package(unofficial-glib CONFIG REQUIRED)    
-    add_library(cairo-gobject ${CAIRO_GOBJECT_SOURCES}) 
+
+    find_package(unofficial-glib CONFIG REQUIRED)
+    add_library(cairo-gobject ${CAIRO_GOBJECT_SOURCES})
     target_link_libraries(cairo-gobject PRIVATE cairo unofficial::glib::gobject unofficial::glib::glib)
 endif()
 
@@ -274,9 +295,14 @@ endif()
 install(FILES ${CAIRO_HEADERS} DESTINATION include)
 install(FILES ${CAIRO_HEADERS} DESTINATION include/cairo)
 
+if(APPLE)
+  install(FILES ${CAIRO_MACOS_HEADERS} DESTINATION include)
+  install(FILES ${CAIRO_MACOS_HEADERS} DESTINATION include/cairo)
+endif()
+
 if (WITH_X11)
-    install(FILES ${CAIRO_X11_HEADERS} DESTINATION include)
-    install(FILES ${CAIRO_X11_HEADERS} DESTINATION include/cairo)
+  install(FILES ${CAIRO_X11_HEADERS} DESTINATION include)
+  install(FILES ${CAIRO_X11_HEADERS} DESTINATION include/cairo)
 endif()
 
 install(TARGETS cairo
@@ -292,7 +318,7 @@ if(WITH_GOBJECT)
        RUNTIME DESTINATION bin
        LIBRARY DESTINATION lib
        ARCHIVE DESTINATION lib
-) 
+)
 endif()
 
 install(
@@ -302,8 +328,8 @@ install(
     DESTINATION share/unofficial-cairo
 )
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/unofficial-cairo-config.cmake
-"include(CMakeFindDependencyMacro)
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/unofficial-cairo-config.cmake "
+include(CMakeFindDependencyMacro)
 find_dependency(ZLIB)
 find_dependency(PNG)
 if(${WITH_FREETYPE})

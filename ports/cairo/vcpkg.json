@@ -16,8 +16,7 @@
     "freetype": {
       "description": "use the freetype font backend",
       "dependencies": [
-        "fontconfig",
-        "freetype"
+        "freetype", "fontconfig"
       ]
     },
     "gobject": {
