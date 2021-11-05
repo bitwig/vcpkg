@@ -111,9 +111,8 @@ if("compiler-rt" IN_LIST FEATURES)
     list(APPEND LLVM_ENABLE_PROJECTS "compiler-rt")
 endif()
 if("flang" IN_LIST FEATURES)
-    # Disable Flang on Windows (see http://lists.llvm.org/pipermail/flang-dev/2020-July/000448.html).
-    if(VCPKG_TARGET_IS_WINDOWS)
-        message(FATAL_ERROR "Building Flang with MSVC is not supported. Disable it until issues are fixed.")
+    if(VCPKG_TARGET_IS_WINDOWS AND VCPKG_TARGET_ARCHITECTURE STREQUAL "x86")
+        message(FATAL_ERROR "Building Flang with MSVC is not supported on x86. Disable it until issues are fixed.")
     endif()
     list(APPEND LLVM_ENABLE_PROJECTS "flang")
     list(APPEND FEATURE_OPTIONS
@@ -156,9 +155,8 @@ if("openmp" IN_LIST FEATURES)
     list(APPEND LLVM_ENABLE_PROJECTS "openmp")
     # Perl is required for the OpenMP run-time
     vcpkg_find_acquire_program(PERL)
-    list(APPEND FEATURE_OPTIONS
-        "-DPERL_EXECUTABLE=${PERL}"
-    )
+    get_filename_component(PERL_PATH ${PERL} DIRECTORY)
+    vcpkg_add_to_path(${PERL_PATH})
     if(NOT DEFINED VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "debug")
         list(APPEND FEATURE_OPTIONS
             -DLIBOMP_DEFAULT_LIB_NAME=libompd
@@ -288,20 +286,34 @@ llvm_cmake_package_config_fixup("polly" DO_NOT_DELETE_PARENT_CONFIG_PATH)
 llvm_cmake_package_config_fixup("ParallelSTL" FEATURE_NAME "pstl" DO_NOT_DELETE_PARENT_CONFIG_PATH)
 llvm_cmake_package_config_fixup("llvm")
 
+set(empty_dirs)
+
 if("clang-tools-extra" IN_LIST FEATURES)
-    # Remove empty include directory include/clang-tidy/plugin
-    file(GLOB_RECURSE INCLUDE_CLANG_TIDY_PLUGIN_FILES "${CURRENT_PACKAGES_DIR}/include/clang-tidy/plugin/*")
-    if(NOT INCLUDE_CLANG_TIDY_PLUGIN_FILES)
-        file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/include/clang-tidy/plugin")
-    endif()
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/clang-tidy/plugin")
 endif()
 
 if("flang" IN_LIST FEATURES)
-    # Remove empty include directory /include/flang/Config
-    file(GLOB_RECURSE INCLUDE_FLANG_CONFIG_FILES "${CURRENT_PACKAGES_DIR}/include/flang/Config/*")
-    if(NOT INCLUDE_FLANG_CONFIG_FILES)
-        file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/include/flang/Config")
-    endif()
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/flang/Config")
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/flang/CMakeFiles")
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/flang/Optimizer/CMakeFiles")
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/flang/Optimizer/CodeGen/CMakeFiles")
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/flang/Optimizer/Dialect/CMakeFiles")
+    list(APPEND empty_dirs "${CURRENT_PACKAGES_DIR}/include/flang/Optimizer/Transforms/CMakeFiles")
+endif()
+
+if(empty_dirs)
+    foreach(empty_dir IN LISTS empty_dirs)
+        if(NOT EXISTS "${empty_dir}")
+            message(SEND_ERROR "Directory '${empty_dir}' is not exist. Please remove it from the checking.")
+        else()
+            file(GLOB_RECURSE files_in_dir "${empty_dir}/*")
+            if(files_in_dir)
+                message(SEND_ERROR "Directory '${empty_dir}' is not empty. Please remove it from the checking.")
+            else()
+                file(REMOVE_RECURSE "${empty_dir}")
+            endif()
+        endif()
+    endforeach()
 endif()
 
 vcpkg_copy_tool_dependencies(${CURRENT_PACKAGES_DIR}/tools/${PORT})
